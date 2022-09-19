@@ -22,3 +22,4 @@ const taskList = [
 asyncParallel(taskList, result => {
   console.log('got the results', result);
 });
+
