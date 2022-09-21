@@ -1,29 +1,21 @@
-function asyncSeries(taskList, callback) {
-  var arr = [];
-  let tasksCompleted = 0;
-  taskList.reduce((accum, current) => {
-    return accum.then(someVal => {
-      return new Promise((resolve, reject) => {
-        current((value) => {
-          arr.push(value)
-          tasksCompleted++
-          if (tasksCompleted === taskList.length) {
-            callback.call(null, arr)
-          } else {
-            resolve(value)
-          }
-        })
-      })
-    })
-  }, Promise.resolve())
+function memoize(fn) {
+  const cache = {}
+  return function() {
+    const args = JSON.stringify(arguments);
+    if (cache[args]) {
+      return cache[args]
+    }
+    const evaluatedValue = fn.apply(this, arguments);
+    cache[args] = evaluatedValue;
+    return evaluatedValue;
+  }
 }
-const taskList = [
-  createAsyncTask(),
-  createAsyncTask(),
-  createAsyncTask(),
-  createAsyncTask(),
-  createAsyncTask(),
-]
-asyncSeries(taskList, (result) => {
-  console.log("got the results", result)
-})
+function factorial(n) {
+   if(n === 0 || n === 1) {
+     return 1
+   }
+   return factorial(n-1) * n; 
+}
+const memoizedFactorial = memoize(factorial)
+memoizedFactorial(1000) // slow
+memoizedFactorial(1000) // faster
