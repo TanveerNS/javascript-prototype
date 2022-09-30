@@ -1,18 +1,45 @@
-Array.prototype.flatten = function () {
-  let flatArray = []
-  for (let index = 0; index < this.length; index++) {
-    const element = this[index];
-    if (Array.isArray(element)) {
-      flatArray = flatArray.concat(this.flatten.call(element))
-    } else {
-      flatArray.push(element)
-    }
+/**
+ * Attaching listeners to prototyoe
+ */
+Array.prototype.listeners = {};
+Array.prototype.addListener = function(eventName, callback) {
+  if (!this.listeners[eventName]) {
+    // Create a new array for new events
+    // idea of an array is we can invoke all callbacks
+    this.listeners[eventName] = [];
   }
-  return flatArray;
-}
-// function flatten
-//const nestedArr = [[1], [[1, 4, [5, 3]], [1, 2, 3, 4]]] => [1, 1, 4, 5, 3, 1, 2, 3, 4]
-const nestedArr = [[1], [[1, 4, [5, 3]], [1, 2, 3, [3, 4, [2, [22, [3, 4, 5, 6, 5, [2]]]]], 4]]]
-//const nestedArr = [1, 2, 3, 4, [1]]
-const flat = nestedArr.flatten();
-console.log(flat);
+  this.listeners[eventName].push(callback);
+};
+// New push Method
+// Calls trigger event
+Array.prototype.pushWithEvent = function() {
+  const size = this.length;
+  const argsList = Array.prototype.slice.call(arguments);
+  for (let index = 0; index < argsList.length; index++) {
+    this[size + index] = argsList[index];
+  }
+  // trigger add event
+  this.triggerEvent('add', argsList);
+};
+Array.prototype.triggerEvent = function(eventName, elements) {
+  if (this.listeners[eventName] && this.listeners[eventName].length) {
+    this.listeners[eventName].forEach(callback =>
+      callback(eventName, elements, this)
+    );
+  }
+};
+// example
+const a = [];
+a.addListener('add', (items, args) => {
+  console.log('items were added', args);
+});
+a.addListener('add', (items, args) => {
+  console.log('items were added again', args);
+});
+a.pushWithEvent(1, 2, 3, 'a', 'b');
+console.log(a);
+a.pushWithEvent('hello');
+a.pushWithEvent(55);
+setTimeout(() => {
+  a.pushWithEvent('delayed');
+}, 5000);
