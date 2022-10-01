@@ -1,45 +1,54 @@
-/**
- * Attaching listeners to prototyoe
- */
-Array.prototype.listeners = {};
-Array.prototype.addListener = function(eventName, callback) {
-  if (!this.listeners[eventName]) {
-    // Create a new array for new events
-    // idea of an array is we can invoke all callbacks
-    this.listeners[eventName] = [];
+class EventDispatcher {
+  constructor() {
+    // listeners store
+    this._listeners = {};
   }
-  this.listeners[eventName].push(callback);
-};
-// New push Method
-// Calls trigger event
-Array.prototype.pushWithEvent = function() {
-  const size = this.length;
-  const argsList = Array.prototype.slice.call(arguments);
-  for (let index = 0; index < argsList.length; index++) {
-    this[size + index] = argsList[index];
+  addEventListener(type, listener) {
+    // validation
+    if (this._listeners[type] === undefined) {
+      this._listeners[type] = [];
+    }
+    // if event not provided push into listeners array
+    if (this._listeners[type].indexOf(listener) === -1) {
+      this._listeners[type].push(listener);
+    }
   }
-  // trigger add event
-  this.triggerEvent('add', argsList);
-};
-Array.prototype.triggerEvent = function(eventName, elements) {
-  if (this.listeners[eventName] && this.listeners[eventName].length) {
-    this.listeners[eventName].forEach(callback =>
-      callback(eventName, elements, this)
-    );
+  removeEventListener(type, listener) {
+    // validation
+    if (this._listeners === undefined || this._listeners[type] === undefined) return;
+    // found listener candidate to delete
+    const index = this._listeners[type].indexOf(listener);
+    // if founded delete
+    if (index !== -1) {
+      this._listeners[type].splice(index, 1);
+    }
   }
+  dispatchEvent(event) {
+    // validation
+    if (this._listeners === undefined || this._listeners[event.type] === undefined) return;
+    // create a copy to avoid race condition
+    const eventListenersCopy = this._listeners[event.type].slice(0);
+    // bind target context
+    event.target = this;
+    // move through listeners array and dispatch
+    for (let i = 0; i < eventListenersCopy.length; i++){
+      eventListenersCopy[i].call(this, event);
+    }
+  } 
+}
+// example using below
+const ed = new EventDispatcher();
+// DO NOT USE ON PRODUCTION. ONLY FOR EXAMPLE
+const event = {
+  target: null,
+  type: 'my-event'
 };
-// example
-const a = [];
-a.addListener('add', (items, args) => {
-  console.log('items were added', args);
-});
-a.addListener('add', (items, args) => {
-  console.log('items were added again', args);
-});
-a.pushWithEvent(1, 2, 3, 'a', 'b');
-console.log(a);
-a.pushWithEvent('hello');
-a.pushWithEvent(55);
-setTimeout(() => {
-  a.pushWithEvent('delayed');
-}, 5000);
+const listener = () => {
+  console.log('handled!');
+};
+ed.addEventListener('my-event', listener);
+// should be handled
+ed.dispatchEvent(event);
+ed.removeEventListener('my-event', listener);
+// should not be handled
+ed.dispatchEvent(event);
